@@ -7,6 +7,7 @@ from PL import update_pl_sheet
 from openpyxl import load_workbook
 from googleapiclient.discovery import build
 from google.oauth2.service_account import Credentials
+from datetime import datetime
 
 
 # Google API設定
@@ -22,7 +23,7 @@ service = build('sheets', 'v4', credentials=credentials)
 # GUIの作成
 root = tk.Tk()
 root.title("データ入力フォーム")
-# root.geometry("800x600")  # 必要に応じて幅と高さを調整
+default_font = ("Arial", 15)  # フォントサイズを14ポイントに設定
 
 # 適用フィールドの選択肢
 options_apply = [
@@ -49,9 +50,57 @@ def create_radio_buttons(options, variable, row_start, column_start):
             root,
             text=option,
             variable=variable,
-            value=option
-        ).grid(row=row_start, column=column_start, padx=(10 + i * 95), pady=2, sticky="w")
+            value=option,
+            font=default_font  # フォントを指定
+        ).grid(row=row_start, column=column_start, padx=(10 + i * 110), pady=2, sticky="w")
 
+def sort_by_column(column_name):
+    global sort_state
+
+    try:
+        # 現在のデータを取得
+        rows = []
+        for child in tree.get_children(''):
+            value = tree.set(child, column_name)
+            try:
+                # 日付に変換可能か確認
+                if column_name == "月日":
+                    parsed_value = datetime.strptime(value, "%Y/%m/%d")
+                else:
+                    parsed_value = value
+            except ValueError:
+                parsed_value = value  # 日付でない場合そのまま
+            rows.append((parsed_value, child))
+
+        if not rows:
+            return
+
+        # 列が現在のソート列かを確認
+        if sort_state["column"] == column_name:
+            # ソート順を変更する
+            if sort_state["order"] == "asc":
+                sort_state["order"] = "desc"
+                rows.sort(reverse=True, key=lambda x: x[0])
+            elif sort_state["order"] == "desc":
+                sort_state["order"] = None  # 登録順に戻す
+                tree.delete(*tree.get_children())
+                for row in original_data:
+                    tree.insert("", "end", values=row)
+                return
+            else:
+                sort_state["order"] = "asc"
+                rows.sort(key=lambda x: x[0])
+        else:
+            # 新しい列でソートする
+            sort_state["column"] = column_name
+            sort_state["order"] = "asc"
+            rows.sort(key=lambda x: x[0])
+
+        # ソート後のデータをTreeviewに再挿入
+        for index, (_, child) in enumerate(rows):
+            tree.move(child, '', index)
+    except Exception as e:
+        print(f"ソート中にエラーが発生しました: {e}")
 
 
 # 日付フォーマット補完関数
@@ -142,6 +191,8 @@ def refresh_table():
     """
     スプレッドシートのデータを取得してUIに表示する関数
     """
+    global original_data  # 登録順データを保持するグローバル変数を使用
+
     try:
         # Googleスプレッドシートからデータを取得
         result = service.spreadsheets().values().get(
@@ -151,12 +202,17 @@ def refresh_table():
 
         # データの取得結果を確認
         values = result.get("values", [])
-
+        
         # データが空の場合
-        if not values:
+        if not values or len(values) <= 1:  # データが空か、ヘッダーのみの場合
+            original_data = []  # 登録順データも空にする
+            tree.delete(*tree.get_children())  # Treeviewをクリア
             messagebox.showwarning("データ取得エラー", "スプレッドシートが空です。")
             return
         
+        # 登録順データを保存（ヘッダーをスキップ）
+        original_data = values[1:]  # ヘッダー行を除いたデータを保持
+
         # Treeview の列を定義
         tree["columns"] = ["月日", "取引分類", "科目", "適用", "取引手段", "金額"]
         
@@ -166,12 +222,16 @@ def refresh_table():
             tree.column(col, anchor="center", width=150)  # 幅を調整
 
         # Treeview をクリア
-        for row in tree.get_children():
-            tree.delete(row)
+        tree.delete(*tree.get_children())  # Treeviewの既存データをすべて削除
 
         # データをTreeviewに挿入
-        for row in values[1:]:  # ヘッダー行をスキップ
+        for row in original_data:
             tree.insert("", "end", values=row)
+            
+        # ツリービューのフォント設定
+        style = ttk.Style()
+        style.configure("Treeview", font=default_font)  # 本体のフォント
+        style.configure("Treeview.Heading", font=default_font)  # ヘッダーのフォント
 
         # PLシートを更新
         update_pl_sheet(service, SPREADSHEET_ID)
@@ -180,7 +240,6 @@ def refresh_table():
         # エラー内容を表示
         print("エラー詳細:", e)
         messagebox.showerror("エラー", f"データの取得中にエラーが発生しました: {e}")
-
 
 
 def reset_fields():
@@ -193,7 +252,6 @@ def reset_fields():
     selected_option_means.set(options_means[0])
     entry_date.focus()
 
-last_selected_item = None
 def load_selected_record(event):
     """
     Treeviewで選択された行のデータをGoogleスプレッドシートから取得し、
@@ -307,16 +365,6 @@ def delete_data():
     except Exception as e:
         messagebox.showerror("エラー", f"データの削除中にエラーが発生しました: {e}")
 
-
-
-# 各ラベルとエントリー
-labels = ["月日", "金額"]
-entries = []
-
-# 課税所得を表示するラベル
-taxable_income_label = tk.Label(root, text="課税所得: 計算中...", font=("Arial", 12))
-taxable_income_label.grid(row=len(labels) + 11, column=0, columnspan=2, pady=(5, 10), padx=(20, 0), sticky = "w")
-
 def update_taxable_income_label():
     try:
         # Googleスプレッドシートからデータを取得
@@ -336,10 +384,18 @@ def update_taxable_income_label():
     except Exception as e:
         taxable_income_label.config(text="課税所得: エラー発生")
 
+last_selected_item = None
+# 各ラベルとエントリー
+labels = ["月日", "金額"]
+entries = []
+
+# 課税所得を表示するラベル
+taxable_income_label = tk.Label(root, text="課税所得: 計算中...", font=default_font)
+taxable_income_label.grid(row=len(labels) + 11, column=0, columnspan=2, pady=(5, 10), padx=(20, 0), sticky="w")
 
 # 既存のラベル設定を左詰めに変更
 for i, label in enumerate(labels):
-    tk.Label(root, text=label).grid(row=i, column=0, padx=10, pady=5, sticky="w")
+    tk.Label(root, text=label, font=default_font).grid(row=i, column=0, padx=10, pady=5, sticky="w")
     entry = tk.Entry(root, width=30)
     entry.grid(row=i, column=1, padx=12, pady=5, sticky="w")
     entries.append(entry)
@@ -352,26 +408,26 @@ entry_date.insert(0, "2024")
 entry_date.bind("<FocusOut>", format_date)
 
 # 適用、科目、取引分類、取引手段のラベルを追加
-tk.Label(root, text="適用").grid(row=len(labels), column=0, padx=10, pady=5, sticky="w")
+tk.Label(root, text="適用", font=default_font).grid(row=len(labels), column=0, padx=10, pady=5, sticky="w")
 # 最初の6つの選択肢を配置
 create_radio_buttons(options_apply[:6], selected_option_apply, row_start=len(labels), column_start=1)
 create_radio_buttons(options_apply[6:12], selected_option_apply, row_start=len(labels) + 1, column_start=1)
 create_radio_buttons(options_apply[12:], selected_option_apply, row_start=len(labels) + 2, column_start=1)
-tk.Label(root, text="科目").grid(row=len(labels) + 3, column=0, padx=10, pady=5, sticky="w")
+tk.Label(root, text="科目", font=default_font).grid(row=len(labels) + 3, column=0, padx=10, pady=5, sticky="w")
 create_radio_buttons(options_subject[:6], selected_option_subject, row_start=len(labels) + 3, column_start=1)
 create_radio_buttons(options_subject[6:12], selected_option_subject, row_start=len(labels) + 4, column_start=1)
 create_radio_buttons(options_subject[12:], selected_option_subject, row_start=len(labels) + 5, column_start=1)
-tk.Label(root, text="取引分類").grid(row=len(labels) + 6, column=0, padx=10, pady=5, sticky="w")
+tk.Label(root, text="取引分類", font=default_font).grid(row=len(labels) + 6, column=0, padx=10, pady=5, sticky="w")
 create_radio_buttons(options_kind, selected_option_kind, row_start=len(labels) + 6, column_start=1)
-tk.Label(root, text="取引手段").grid(row=len(labels) + 7, column=0, padx=10, pady=5, sticky="w")
+tk.Label(root, text="取引手段", font=default_font).grid(row=len(labels) + 7, column=0, padx=10, pady=5, sticky="w")
 create_radio_buttons(options_means, selected_option_means, row_start=len(labels) + 7, column_start=1)
 
 # 保存ボタン
-save_button = tk.Button(root, text="データを追加/修正", command=save_data, width=15)
+save_button = tk.Button(root, text="データを追加/修正", command=save_data, font=default_font, width=15)
 save_button.grid(row=len(labels) + 9, column=0, columnspan=2, pady=(20, 5), padx=(40, 0), sticky="w")
 
 # 削除ボタン
-delete_button = tk.Button(root, text="データを削除", command=delete_data, width=15)
+delete_button = tk.Button(root, text="データを削除", command=delete_data, font=default_font, width=15)
 delete_button.grid(row=len(labels) + 10, column=0, columnspan=2, pady=(5, 20), padx=(40, 0), sticky="w")
 
 # データ表示用のTreeview
@@ -384,6 +440,7 @@ tree_scrollbar = ttk.Scrollbar(tree_frame, orient="vertical")
 tree_scrollbar.pack(side="right", fill="y")
 
 # データ表示用のTreeview
+# Treeviewの列を定義
 columns = ["月日", "取引分類", "科目", "適用", "取引手段", "金額"]
 tree = ttk.Treeview(tree_frame, columns=columns, show="headings", height=16, yscrollcommand=tree_scrollbar.set)
 tree.pack(side="left", fill="both", expand=True)
@@ -391,19 +448,37 @@ tree.pack(side="left", fill="both", expand=True)
 # ScrollbarをTreeviewにリンク
 tree_scrollbar.config(command=tree.yview)
 
-
-
 # 各列のヘッダーと幅を設定
 for col in columns:
-    tree.heading(col, text=col)
-    tree.column(col, width=100)
+    tree.heading(col, text=col)  # ヘッダーを設定
+    tree.column(col, width=150, anchor="center")  # 幅と配置を設定
 
+# ソート状態を保持する変数
+sort_state = {"column": None, "order": None}  # ソートの列と順序を記録
 
-# Treeviewに選択イベントをバインド
-tree.bind("<<TreeviewSelect>>", load_selected_record)
+# スタイルの設定（Treeviewのヘッダーをカスタマイズ）
+style = ttk.Style()
+style.configure("Treeview.Heading", font=("Arial", 15), relief="flat")  # ヘッダーのフォントとスタイルを設定
+style.map("Treeview.Heading", relief=[("active", "raised")])  # クリック時の効果
+
+# ヘッダークリックイベントを処理する関数
+def on_header_click(event):
+    region = tree.identify_region(event.x, event.y)  # クリックされた場所を特定
+    if region == "heading":  # ヘッダーがクリックされた場合
+        column_id = tree.identify_column(event.x)  # クリックされた列を特定
+        print(f"{column_id}ヘッダーがクリックされました")  # デバッグ用出力
+        if column_id == "#1":  # #1は「月日」の列を指します
+            sort_by_column("月日")
+
+# Treeviewにヘッダークリックイベントをバインド
+tree.bind("<Button-1>", on_header_click)
 
 # 初期データの表示
 refresh_table()
+
+# デバッグ用に列名を出力
+print("現在のTreeviewの列:", tree["columns"])  # 出力例: ['月日', '取引分類', '科目', '適用', '取引手段', '金額']
+
 
 # メインループの開始
 root.mainloop()
