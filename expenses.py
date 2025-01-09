@@ -3,7 +3,7 @@ from tkinter import messagebox
 from tkinter import ttk
 import pandas as pd
 import os
-from PL import update_pl_sheet
+from PL import update_pl_sheet_background
 from openpyxl import load_workbook
 from googleapiclient.discovery import build
 from google.oauth2.service_account import Credentials
@@ -234,7 +234,7 @@ def refresh_table():
         style.configure("Treeview.Heading", font=default_font)  # ヘッダーのフォント
 
         # PLシートを更新
-        update_pl_sheet(service, SPREADSHEET_ID)
+        update_pl_sheet_background(service, SPREADSHEET_ID)
 
     except Exception as e:
         # エラー内容を表示
@@ -472,6 +472,8 @@ def on_header_click(event):
 
 # Treeviewにヘッダークリックイベントをバインド
 tree.bind("<Button-1>", on_header_click)
+# Treeviewの選択イベントを処理する関数にバインド
+tree.bind("<<TreeviewSelect>>", load_selected_record)
 
 # 初期データの表示
 refresh_table()

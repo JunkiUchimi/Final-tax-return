@@ -1,3 +1,4 @@
+import threading
 from googleapiclient.discovery import build
 from google.oauth2.service_account import Credentials
 
@@ -48,9 +49,6 @@ def update_pl_sheet(service, spreadsheet_id):
         if not values or len(values) < 2:
             print("「経費」シートが空、またはデータが不足しています。")
             return
-        
-        # ヘッダーを取得
-        headers = values[0]
 
         # 各経費項目の合計を計算
         expense_sums = {field: 0 for field in EXPENSE_FIELDS}
@@ -80,7 +78,7 @@ def update_pl_sheet(service, spreadsheet_id):
         }
 
         # 「PL」シート全体を取得
-        pl_range = "PL!A1:Z50"  # PLシートの全範囲を取得
+        pl_range = "PL!A1:Z50"
         result_pl = service.spreadsheets().values().get(
             spreadsheetId=spreadsheet_id,
             range=pl_range
@@ -102,7 +100,7 @@ def update_pl_sheet(service, spreadsheet_id):
         for header, value in {**expense_sums, **pl_data}.items():
             if header in header_positions:
                 row_idx, col_idx = header_positions[header]
-                cell_range = f"PL!{chr(65 + col_idx)}{row_idx}"  # ヘッダーの右隣のセル
+                cell_range = f"PL!{chr(65 + col_idx)}{row_idx}"
                 body = {"values": [[value]]}
                 service.spreadsheets().values().update(
                     spreadsheetId=spreadsheet_id,
@@ -115,3 +113,19 @@ def update_pl_sheet(service, spreadsheet_id):
 
     except Exception as e:
         print(f"更新中にエラーが発生しました: {e}")
+
+def update_pl_sheet_background(service, spreadsheet_id):
+    """
+    PLシートをバックグラウンドで更新する関数。
+    """
+    def update_task():
+        try:
+            update_pl_sheet(service, spreadsheet_id)
+            print("PLシートの更新が完了しました。")
+        except Exception as e:
+            print(f"バックグラウンド更新中にエラーが発生しました: {e}")
+
+    # スレッドを作成して開始
+    update_thread = threading.Thread(target=update_task)
+    update_thread.daemon = True  # メインスレッド終了時にこのスレッドも終了
+    update_thread.start()
