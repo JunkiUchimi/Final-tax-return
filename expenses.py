@@ -23,7 +23,7 @@ service = build('sheets', 'v4', credentials=credentials)
 # GUIの作成
 root = tk.Tk()
 root.title("データ入力フォーム")
-default_font = ("Arial", 15)  # フォントサイズを14ポイントに設定
+default_font = ("Arial", 13)  # フォントサイズを14ポイントに設定
 
 # 適用フィールドの選択肢
 options_apply = [
