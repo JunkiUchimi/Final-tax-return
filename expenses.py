@@ -401,7 +401,7 @@ tk.Label(root, text="月日", font=default_font).grid(row=0, column=0, padx=10, 
 entry_date = tk.Entry(root, width=15)
 entry_date.grid(row=0, column=1, padx=0, pady=5, sticky="w")
 
-tk.Label(root, text="金額", font=default_font).grid(row=0, column=1, padx=200, pady=5, sticky="w")
+tk.Label(root, text="金額", font=default_font).grid(row=0, column=1, padx=150, pady=5, sticky="w")
 entry_amount = tk.Entry(root, width=15)
 entry_amount.grid(row=0, column=1, padx=260, pady=5, sticky="w")
 
