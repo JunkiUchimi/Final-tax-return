@@ -424,7 +424,7 @@ selected_option_apply.trace_add(
     lambda *args: on_apply_change(*args, selected_option=selected_option_apply, entry=apply_entry)
 )
 tk.Label(root, text="科目", font=default_font).grid(row=len(labels) + 3, column=0, padx=10, pady=(15, 0), sticky="w")
-create_radio_buttons(options_subject[:6], selected_option_subject, row_start=len(labels) + 3, column_start=1)
+create_radio_buttons(options_subject[:6], selected_option_subject, row_start=len(labels) + 3, column_start=1, pady=(15, 0))
 create_radio_buttons(options_subject[6:12], selected_option_subject, row_start=len(labels) + 4, column_start=1)
 create_radio_buttons(options_subject[12:], selected_option_subject, row_start=len(labels) + 5, column_start=1)
 subject_entry = tk.Entry(root, font=default_font, state="disabled", width=30)
@@ -435,7 +435,7 @@ selected_option_subject.trace_add(
     lambda *args: on_apply_change(*args, selected_option=selected_option_subject, entry=subject_entry)
 )
 tk.Label(root, text="取引分類", font=default_font).grid(row=len(labels) + 6, column=0, padx=10, pady=(15, 0), sticky="w")
-create_radio_buttons(options_kind, selected_option_kind, row_start=len(labels) + 6, column_start=1)
+create_radio_buttons(options_kind, selected_option_kind, row_start=len(labels) + 6, column_start=1, pady=(15, 0))
 tk.Label(root, text="取引手段", font=default_font).grid(row=len(labels) + 7, column=0, padx=10, pady=5, sticky="w")
 create_radio_buttons(options_means, selected_option_means, row_start=len(labels) + 7, column_start=1)
 
