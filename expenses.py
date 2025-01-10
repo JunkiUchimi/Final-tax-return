@@ -8,6 +8,7 @@ from openpyxl import load_workbook
 from googleapiclient.discovery import build
 from google.oauth2.service_account import Credentials
 from datetime import datetime
+from utils import on_apply_change
 
 
 # Google API設定
@@ -23,7 +24,7 @@ service = build('sheets', 'v4', credentials=credentials)
 # GUIの作成
 root = tk.Tk()
 root.title("データ入力フォーム")
-default_font = ("Arial", 11)  # フォントサイズを14ポイントに設定
+default_font = ("Arial", 11)  # フォントサイズを11ポイントに設定
 
 # 適用フィールドの選択肢
 options_apply = [
@@ -38,6 +39,9 @@ options_subject = [
 ]
 options_means = [ "現金", "普通預金" ]
 options_kind = [ "経費", "事業主貸", "売上" ]
+# 適用フィールドに「その他」を追加
+options_apply.append("その他")
+options_subject.append("その他")
 
 selected_option_apply = tk.StringVar(value=options_apply[0])  # 初期値を設定
 selected_option_subject = tk.StringVar(value=options_subject[0])  # 初期値を設定
@@ -126,10 +130,10 @@ def save_data():
         # 入力フィールドからデータを取得
         date = entry_date.get()
         kind = selected_option_kind.get()
-        subject = selected_option_subject.get()
-        apply = selected_option_apply.get()
+        apply = apply_entry.get() if selected_option_apply.get() == "その他" else selected_option_apply.get()
+        subject = subject_entry.get() if selected_option_subject.get() == "その他" else selected_option_subject.get()
         means = selected_option_means.get()
-
+    
         # 金額を取得し、整形して数値に変換
         amount_text = entry_amount.get()
         amount_text = amount_text.replace(",", "")  # 「,」を削除
@@ -413,10 +417,25 @@ tk.Label(root, text="適用", font=default_font).grid(row=len(labels), column=0,
 create_radio_buttons(options_apply[:6], selected_option_apply, row_start=len(labels), column_start=1)
 create_radio_buttons(options_apply[6:12], selected_option_apply, row_start=len(labels) + 1, column_start=1)
 create_radio_buttons(options_apply[12:], selected_option_apply, row_start=len(labels) + 2, column_start=1)
+# 自由入力用のエントリー（初期は無効）
+apply_entry = tk.Entry(root, font=default_font, state="disabled", width=30)
+apply_entry.grid(row=len(labels) + 2, column=1, padx=650, pady=2  , sticky="w")
+# ラジオボタンの選択変更時に動作を連動
+selected_option_apply.trace_add(
+    "write", 
+    lambda *args: on_apply_change(*args, selected_option=selected_option_apply, entry=apply_entry)
+)
 tk.Label(root, text="科目", font=default_font).grid(row=len(labels) + 3, column=0, padx=10, pady=5, sticky="w")
 create_radio_buttons(options_subject[:6], selected_option_subject, row_start=len(labels) + 3, column_start=1)
 create_radio_buttons(options_subject[6:12], selected_option_subject, row_start=len(labels) + 4, column_start=1)
 create_radio_buttons(options_subject[12:], selected_option_subject, row_start=len(labels) + 5, column_start=1)
+subject_entry = tk.Entry(root, font=default_font, state="disabled", width=30)
+subject_entry.grid(row=len(labels) + 5, column=1, padx=350, pady=2  , sticky="w")
+# ラジオボタンの選択変更時に動作を連動
+selected_option_subject.trace_add(
+    "write", 
+    lambda *args: on_apply_change(*args, selected_option=selected_option_subject, entry=subject_entry)
+)
 tk.Label(root, text="取引分類", font=default_font).grid(row=len(labels) + 6, column=0, padx=10, pady=5, sticky="w")
 create_radio_buttons(options_kind, selected_option_kind, row_start=len(labels) + 6, column_start=1)
 tk.Label(root, text="取引手段", font=default_font).grid(row=len(labels) + 7, column=0, padx=10, pady=5, sticky="w")
@@ -466,7 +485,6 @@ def on_header_click(event):
     region = tree.identify_region(event.x, event.y)  # クリックされた場所を特定
     if region == "heading":  # ヘッダーがクリックされた場合
         column_id = tree.identify_column(event.x)  # クリックされた列を特定
-        print(f"{column_id}ヘッダーがクリックされました")  # デバッグ用出力
         if column_id == "#1":  # #1は「月日」の列を指します
             sort_by_column("月日")
 
@@ -477,10 +495,6 @@ tree.bind("<<TreeviewSelect>>", load_selected_record)
 
 # 初期データの表示
 refresh_table()
-
-# デバッグ用に列名を出力
-print("現在のTreeviewの列:", tree["columns"])  # 出力例: ['月日', '取引分類', '科目', '適用', '取引手段', '金額']
-
 
 # メインループの開始
 root.mainloop()

@@ -1,1 +1,4 @@
 credentials.json
+__pyache__
+.DS_Store
+expenses.spec
