@@ -390,22 +390,20 @@ def update_taxable_income_label():
 
 last_selected_item = None
 # 各ラベルとエントリー
-labels = ["月日", "金額"]
-entries = []
-
+labels = ["月日"]
 # 課税所得を表示するラベル
 taxable_income_label = tk.Label(root, text="課税所得: 計算中...", font=default_font)
-taxable_income_label.grid(row=len(labels) + 11, column=0, columnspan=2, pady=(5, 10), padx=(20, 0), sticky="w")
+taxable_income_label.grid(row=len(labels) + 10, column=0, columnspan=2, pady=(5, 10), padx=(20, 0), sticky="w")
 
 # 既存のラベル設定を左詰めに変更
-for i, label in enumerate(labels):
-    tk.Label(root, text=label, font=default_font).grid(row=i, column=0, padx=10, pady=5, sticky="w")
-    entry = tk.Entry(root, width=30)
-    entry.grid(row=i, column=1, padx=12, pady=5, sticky="w")
-    entries.append(entry)
+# 「月日」と「金額」のラベルを横並びに表示
+tk.Label(root, text="月日", font=default_font).grid(row=0, column=0, padx=10, pady=5, sticky="w")
+entry_date = tk.Entry(root, width=15)
+entry_date.grid(row=0, column=1, padx=0, pady=5, sticky="w")
 
-# 日付と金額フィールドを取得
-entry_date, entry_amount = entries
+tk.Label(root, text="金額", font=default_font).grid(row=0, column=1, padx=200, pady=5, sticky="w")
+entry_amount = tk.Entry(root, width=15)
+entry_amount.grid(row=0, column=1, padx=260, pady=5, sticky="w")
 
 # 日付フィールドの初期値を設定
 entry_date.insert(0, "2024")
@@ -443,16 +441,16 @@ create_radio_buttons(options_means, selected_option_means, row_start=len(labels)
 
 # 保存ボタン
 save_button = tk.Button(root, text="データを追加/修正", command=save_data, font=default_font, width=15)
-save_button.grid(row=len(labels) + 9, column=0, columnspan=2, pady=(20, 5), padx=(40, 0), sticky="w")
+save_button.grid(row=len(labels) + 9, column=0, columnspan=2, pady=(10, 5), padx=(40, 0), sticky="w")
 
 # 削除ボタン
 delete_button = tk.Button(root, text="データを削除", command=delete_data, font=default_font, width=15)
-delete_button.grid(row=len(labels) + 10, column=0, columnspan=2, pady=(5, 20), padx=(40, 0), sticky="w")
+delete_button.grid(row=len(labels) + 9, column=0, columnspan=2, pady=(10, 5), padx=(200, 0), sticky="w")
 
 # データ表示用のTreeview
 # データ表示用のFrameを作成
 tree_frame = tk.Frame(root)
-tree_frame.grid(row=len(labels) + 12, column=0, columnspan=2, padx=10, pady=10, sticky="w")
+tree_frame.grid(row=len(labels) + 11, column=0, columnspan=2, padx=10, pady=10, sticky="w")
 
 # Scrollbarを追加
 tree_scrollbar = ttk.Scrollbar(tree_frame, orient="vertical")
