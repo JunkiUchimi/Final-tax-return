@@ -417,7 +417,7 @@ create_radio_buttons(options_apply[6:12], selected_option_apply, row_start=len(l
 create_radio_buttons(options_apply[12:], selected_option_apply, row_start=len(labels) + 2, column_start=1)
 # 自由入力用のエントリー（初期は無効）
 apply_entry = tk.Entry(root, font=default_font, state="disabled", width=30)
-apply_entry.grid(row=len(labels) + 2, column=1, padx=650, pady=(2, 10), sticky="w")
+apply_entry.grid(row=len(labels) + 2, column=1, padx=650, pady=2, sticky="w")
 # ラジオボタンの選択変更時に動作を連動
 selected_option_apply.trace_add(
     "write", 
@@ -428,7 +428,7 @@ create_radio_buttons(options_subject[:6], selected_option_subject, row_start=len
 create_radio_buttons(options_subject[6:12], selected_option_subject, row_start=len(labels) + 4, column_start=1)
 create_radio_buttons(options_subject[12:], selected_option_subject, row_start=len(labels) + 5, column_start=1)
 subject_entry = tk.Entry(root, font=default_font, state="disabled", width=30)
-subject_entry.grid(row=len(labels) + 5, column=1, padx=350, pady=(2, 10), sticky="w")
+subject_entry.grid(row=len(labels) + 5, column=1, padx=350, pady=2, sticky="w")
 # ラジオボタンの選択変更時に動作を連動
 selected_option_subject.trace_add(
     "write", 
