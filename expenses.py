@@ -3,6 +3,7 @@ from tkinter import messagebox
 from tkinter import ttk
 import pandas as pd
 import os
+import threading
 from PL import update_pl_sheet
 from openpyxl import load_workbook
 from googleapiclient.discovery import build
@@ -38,7 +39,7 @@ options_apply = [
 options_subject = [
     "消耗品費", "旅費交通費", "売上", "修繕費", "車両費",
     "接待交際費", "水道光熱費", "通信費", "利子割引料",
-    "租税公課", "損害保険量", "会議費", "雑費", "事業主貸"
+    "租税公課", "損害保険料", "会議費", "雑費", "事業主貸"
 ]
 # 取引手段フィールドの選択肢
 options_means = [ "現金", "普通預金" ]
@@ -191,9 +192,21 @@ def save_data():
         reset_fields()
         refresh_table()
 
+        # ラベルを「計算中」に設定
+        taxable_income_label.config(text="課税所得: 計算中...")
+
+        # バックグラウンドでPLシート更新と課税所得更新を順番に実行
+        def run_background_tasks():
+            try:
+                update_pl_sheet(service, SPREADSHEET_ID)  # PLシート更新
+                update_taxable_income_label_from_pl(service, SPREADSHEET_ID)  # 課税所得ラベル更新
+            except Exception as e:
+                print(f"エラー: {e}")
+
+        threading.Thread(target=run_background_tasks, daemon=True).start()
+
     except Exception as e:
         messagebox.showerror("エラー", f"エラーが発生しました: {e}")
-
 
 # データを表示する関数
 def refresh_table():
@@ -312,8 +325,6 @@ def load_selected_record(event):
         except Exception as e:
             messagebox.showerror("エラー", f"Googleスプレッドシートからデータを取得できませんでした: {e}")
 
-
-
 def delete_data():
     selected_item = tree.selection()
     if not selected_item:
@@ -412,6 +423,45 @@ def update_proprietor_and_sales():
         messagebox.showinfo("成功", "その他シートを更新しました。")
     except Exception as e:
         messagebox.showerror("エラー", f"Googleスプレッドシートへのデータ登録中にエラーが発生しました: {e}")
+
+def update_taxable_income_label_from_pl(service, spreadsheet_id):
+    """
+    PLシートから課税所得を取得し、ラベルに反映する。
+
+    Args:
+        service: Google Sheets API サービスオブジェクト
+        spreadsheet_id: スプレッドシートID
+    """
+    try:
+        # PLシートのデータを取得
+        pl_range = "PL!A1:K20"  # PLシートの範囲
+        result = service.spreadsheets().values().get(
+            spreadsheetId=spreadsheet_id,
+            range=pl_range
+        ).execute()
+        values = result.get("values", [])
+
+        if not values:
+            raise ValueError("PLシートにデータが存在しません。")
+
+        # 所得金額の位置を特定
+        taxable_income = None
+        for row in values:
+            if "所得金額" in row:  # 所得金額が含まれる列を探す
+                col_index = row.index("所得金額") + 1  # 次の列（右隣）に値があると仮定
+                row_index = values.index(row)
+                taxable_income = values[row_index][col_index]
+                break
+
+        if taxable_income is None:
+            raise ValueError("PLシートに課税所得が見つかりません。")
+
+        # ラベルを更新
+        taxable_income_label.config(text=f"課税所得: {taxable_income}円")
+
+    except Exception as e:
+        taxable_income_label.config(text="課税所得: エラー発生")
+        print(f"課税所得取得エラー: {e}")
 
 last_selected_item = None
 # 各ラベルとエントリー
@@ -534,6 +584,6 @@ tree.bind("<<TreeviewSelect>>", load_selected_record)
 
 # 初期データの表示
 refresh_table()
-
+update_taxable_income_label_from_pl(service, SPREADSHEET_ID)
 # メインループの開始
 root.mainloop()

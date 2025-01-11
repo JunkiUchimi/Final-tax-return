@@ -138,6 +138,6 @@ def update_pl_sheet(service, spreadsheet_id):
                 ).execute()
             else:
                 print(f"ヘッダー '{header}' が PL シートで見つかりません。")
-        messagebox.showinfo("完了", "PLシートの更新が完了しました！")
+        # messagebox.showinfo("完了", "PLシートの更新が完了しました！")
     except Exception as e:
         print(f"更新中にエラーが発生しました: {e}")
