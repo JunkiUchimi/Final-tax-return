@@ -3,13 +3,15 @@ from tkinter import messagebox
 from tkinter import ttk
 import pandas as pd
 import os
-from PL import update_pl_sheet_background
+from PL import update_pl_sheet
 from openpyxl import load_workbook
 from googleapiclient.discovery import build
 from google.oauth2.service_account import Credentials
 from datetime import datetime
 from utils import on_apply_change
-
+from cash import cash
+from journal import journal
+from others import others
 
 # Google API設定
 SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
@@ -32,12 +34,15 @@ options_apply = [
     "鉄道運賃", "通行料金", "清掃用品", "事務用品", "車部品", "ケイコネクト", 
     "ガソリン代", "水道代", "ガス代", "電気代"
 ]
+# 科目フィールドの選択肢
 options_subject = [
     "消耗品費", "旅費交通費", "売上", "修繕費", "車両費",
     "接待交際費", "水道光熱費", "通信費", "利子割引料",
     "租税公課", "損害保険量", "会議費", "雑費", "事業主貸"
 ]
+# 取引手段フィールドの選択肢
 options_means = [ "現金", "普通預金" ]
+# 取引分類フィールドの選択肢
 options_kind = [ "経費", "事業主貸", "売上" ]
 # 適用フィールドに「その他」を追加
 options_apply.append("その他")
@@ -125,7 +130,7 @@ def format_date(event):
 # データを保存する関数
 def save_data():
     global last_selected_item
-
+    format_date(None)
     try:
         # 入力フィールドからデータを取得
         date = entry_date.get()
@@ -236,9 +241,6 @@ def refresh_table():
         style = ttk.Style()
         style.configure("Treeview", font=default_font)  # 本体のフォント
         style.configure("Treeview.Heading", font=default_font)  # ヘッダーのフォント
-
-        # PLシートを更新
-        update_pl_sheet_background(service, SPREADSHEET_ID)
 
     except Exception as e:
         # エラー内容を表示
@@ -388,6 +390,29 @@ def update_taxable_income_label():
     except Exception as e:
         taxable_income_label.config(text="課税所得: エラー発生")
 
+def update_proprietor_and_sales():
+    # "事業主貸" の処理
+    try:
+        others(service, SPREADSHEET_ID, subjectif="事業主貸", range_name="事業主貸・売上!B21:H")
+        others(service, SPREADSHEET_ID, subjectif="消耗品費", range_name="消耗品費!B4:H")
+        others(service, SPREADSHEET_ID, subjectif="旅費交通費", range_name="旅費・接待・研修!B4:H")
+        others(service, SPREADSHEET_ID, subjectif="接待交際費", range_name="旅費・接待・研修!J4:P")
+        others(service, SPREADSHEET_ID, subjectif="研修費", range_name="旅費・接待・研修!R4:X")
+        others(service, SPREADSHEET_ID, subjectif="会議費", range_name="会議費・修繕費・新聞・利子!B4:H")
+        others(service, SPREADSHEET_ID, subjectif="新聞図書費", range_name="会議費・修繕費・新聞・利子!B4:H")
+        others(service, SPREADSHEET_ID, subjectif="修繕費", range_name="会議費・修繕費・新聞・利子!R4:X")
+        others(service, SPREADSHEET_ID, subjectif="利子割引料", range_name="会議費・修繕費・新聞・利子!Z4:AF")
+        others(service, SPREADSHEET_ID, subjectif="租税公課", range_name="租税・雑費・水道・更新!B4:H")
+        others(service, SPREADSHEET_ID, subjectif="雑費", range_name="租税・雑費・水道・更新!J4:P")
+        others(service, SPREADSHEET_ID, subjectif="水道光熱費", range_name="租税・雑費・水道・更新!R4:X")
+        others(service, SPREADSHEET_ID, subjectif="通信費", range_name="租税・雑費・水道・更新!Z4:AF")
+        others(service, SPREADSHEET_ID, subjectif="車両費", range_name="車両・損保・減価!B4:H")
+        others(service, SPREADSHEET_ID, subjectif="損害保険料", range_name="車両・損保・減価!J4:P")
+        others(service, SPREADSHEET_ID, subjectif="減価償却費", range_name="車両・損保・減価!R4:X")
+        messagebox.showinfo("成功", "その他シートを更新しました。")
+    except Exception as e:
+        messagebox.showerror("エラー", f"Googleスプレッドシートへのデータ登録中にエラーが発生しました: {e}")
+
 last_selected_item = None
 # 各ラベルとエントリー
 labels = ["月日"]
@@ -446,6 +471,22 @@ save_button.grid(row=len(labels) + 9, column=0, columnspan=2, pady=(10, 5), padx
 # 削除ボタン
 delete_button = tk.Button(root, text="データを削除", command=delete_data, font=default_font, width=15)
 delete_button.grid(row=len(labels) + 9, column=0, columnspan=2, pady=(10, 5), padx=(200, 0), sticky="w")
+
+# PLシート更新ボタン
+update_PL_button = tk.Button(root, text="PLシート更新", command=lambda: update_pl_sheet(service, SPREADSHEET_ID), font=default_font, width=15)
+update_PL_button.grid(row=len(labels) + 9, column=0, columnspan=2, pady=(10, 5), padx=(360, 0), sticky="w")
+
+# PLシート更新ボタン
+update_cash_button = tk.Button(root, text="現金シート更新", command=lambda: cash(service, SPREADSHEET_ID), font=default_font, width=15)
+update_cash_button.grid(row=len(labels) + 9, column=0, columnspan=2, pady=(10, 5), padx=(520, 0), sticky="w")
+
+# 仕訳帳シート更新ボタン
+update_journal_button = tk.Button(root, text="仕訳帳シート更新", command=lambda: journal(service, SPREADSHEET_ID), font=default_font, width=15)
+update_journal_button.grid(row=len(labels) + 9, column=0, columnspan=2, pady=(10, 5), padx=(680, 0), sticky="w")
+
+# それ以外のシート更新ボタン
+update_proprietor_button = tk.Button(root, text="それ以外全て更新", command=update_proprietor_and_sales, font=default_font, width=15)
+update_proprietor_button.grid(row=len(labels) + 9, column=0, columnspan=2, pady=(10, 5), padx=(840, 0), sticky="w")
 
 # データ表示用のTreeview
 # データ表示用のFrameを作成

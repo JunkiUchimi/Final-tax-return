@@ -31,3 +31,4 @@ def on_apply_change(*args, selected_option, entry):
     else:
         entry.delete(0, tk.END)  # 内容をクリア
         entry.config(state="disabled")  # 入力を無効化する
+

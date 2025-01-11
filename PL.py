@@ -1,6 +1,7 @@
 import threading
 from googleapiclient.discovery import build
 from google.oauth2.service_account import Credentials
+from tkinter import messagebox
 
 # 定数
 BLUE_DEDUCTION = 550000  # 青色申告特別控除額
@@ -29,6 +30,56 @@ def calculate_expenses(values):
             expenses += amount
     return expenses
 
+def parse_sheet_data(values):
+    """
+    経費シートのデータをフィールドごとに分類する。
+
+    Args:
+        values (list): スプレッドシートのデータ
+
+    Returns:
+        dict: フィールドごとの合計金額
+    """
+    expense_sums = {field: 0 for field in EXPENSE_FIELDS}
+    for row in values[1:]:
+        if len(row) < 6:  # データが不足している場合スキップ
+            continue
+        field, amount = row[2], int(row[5].replace(",", ""))
+        if field in EXPENSE_FIELDS:
+            expense_sums[field] += amount
+    return expense_sums
+
+def calculate_pl_data(expense_sums, values):
+    """
+    PLデータを計算する。
+
+    Args:
+        expense_sums (dict): 経費項目ごとの合計金額
+        values (list): スプレッドシートのデータ
+
+    Returns:
+        dict: PLデータ
+    """
+    sales = sum(
+        int(row[5].replace(",", ""))
+        for row in values[1:]
+        if row[1] == "売上" and len(row) >= 6
+    )
+    total_expenses = sum(expense_sums.values())
+    net_income_before_deduction = sales - total_expenses
+    net_income_after_deduction = net_income_before_deduction - BLUE_DEDUCTION
+    
+
+    return {
+        "売上": sales,
+        "差引金額（売上）": sales,
+        "経費計": total_expenses,
+        "青色申告特別控除額": BLUE_DEDUCTION,
+        "差引金額": net_income_before_deduction,
+        "青色申告特別控除前の所得金額": net_income_before_deduction,
+        "所得金額": net_income_after_deduction,
+    }
+
 def update_pl_sheet(service, spreadsheet_id):
     """
     Googleスプレッドシートの「経費」シートからデータを取得し、「PL」シートを更新する関数。
@@ -50,35 +101,12 @@ def update_pl_sheet(service, spreadsheet_id):
             print("「経費」シートが空、またはデータが不足しています。")
             return
 
-        # 各経費項目の合計を計算
-        expense_sums = {field: 0 for field in EXPENSE_FIELDS}
-        for row in values[1:]:
-            if len(row) < 6:  # データが不足している場合スキップ
-                continue
-            field, amount = row[2], int(row[5].replace(",", ""))
-            if field in EXPENSE_FIELDS:
-                expense_sums[field] += amount
-
-        # PLデータを計算
-        sales = sum(
-            int(row[5].replace(",", ""))
-            for row in values[1:]
-            if row[1] == "売上" and len(row) >= 6
-        )
-        total_expenses = sum(expense_sums.values())
-        net_income_before_deduction = sales - total_expenses
-        net_income_after_deduction = net_income_before_deduction - BLUE_DEDUCTION
-
-        pl_data = {
-            "売上": sales,
-            "経費計": total_expenses,
-            "青色申告特別控除額": BLUE_DEDUCTION,
-            "差引金額": net_income_before_deduction,
-            "所得金額": net_income_after_deduction,
-        }
+        # データを解析
+        expense_sums = parse_sheet_data(values)
+        pl_data = calculate_pl_data(expense_sums, values)
 
         # 「PL」シート全体を取得
-        pl_range = "PL!A1:Z50"
+        pl_range = "PL!A1:K20"
         result_pl = service.spreadsheets().values().get(
             spreadsheetId=spreadsheet_id,
             range=pl_range
@@ -110,22 +138,6 @@ def update_pl_sheet(service, spreadsheet_id):
                 ).execute()
             else:
                 print(f"ヘッダー '{header}' が PL シートで見つかりません。")
-
+        messagebox.showinfo("完了", "PLシートの更新が完了しました！")
     except Exception as e:
         print(f"更新中にエラーが発生しました: {e}")
-
-def update_pl_sheet_background(service, spreadsheet_id):
-    """
-    PLシートをバックグラウンドで更新する関数。
-    """
-    def update_task():
-        try:
-            update_pl_sheet(service, spreadsheet_id)
-            print("PLシートの更新が完了しました。")
-        except Exception as e:
-            print(f"バックグラウンド更新中にエラーが発生しました: {e}")
-
-    # スレッドを作成して開始
-    update_thread = threading.Thread(target=update_task)
-    update_thread.daemon = True  # メインスレッド終了時にこのスレッドも終了
-    update_thread.start()
