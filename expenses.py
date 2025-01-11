@@ -550,7 +550,7 @@ tree_scrollbar.pack(side="right", fill="y")
 # データ表示用のTreeview
 # Treeviewの列を定義
 columns = ["月日", "取引分類", "科目", "適用", "取引手段", "金額"]
-tree = ttk.Treeview(tree_frame, columns=columns, show="headings", height=11, yscrollcommand=tree_scrollbar.set)
+tree = ttk.Treeview(tree_frame, columns=columns, show="headings", height=10, yscrollcommand=tree_scrollbar.set)
 tree.pack(side="left", fill="both", expand=True)
 
 # ScrollbarをTreeviewにリンク
