@@ -4,6 +4,7 @@ from tkinter import ttk
 import pandas as pd
 import os
 import threading
+import math
 from PL import update_pl_sheet
 from openpyxl import load_workbook
 from googleapiclient.discovery import build
@@ -31,8 +32,8 @@ default_font = ("Arial", 11)  # フォントサイズを11ポイントに設定
 
 # 適用フィールドの選択肢
 options_apply = [
-    "会食代", "作業着", "作業用品", "手土産", "応接室", "事務室", "駐車料金",
-    "鉄道運賃", "通行料金", "清掃用品", "事務用品", "車部品", "ケイコネクト", 
+    "会食代", "作業着", "作業用品", "手土産", "応接室", "事務室", "携帯料金", "駐車料金",
+    "鉄道運賃", "通行料金", "清掃用品", "事務用品", "車部品", "インターネット料金", "ケイコネクト", 
     "ガソリン代", "水道代", "ガス代", "電気代"
 ]
 # 科目フィールドの選択肢
@@ -156,8 +157,14 @@ def save_data():
 
         # 金額を取得して数値に変換
         amount_text = entry_amount.get().replace(",", "")  # 「,」を削除
+
         try:
             amount = int(amount_text)
+            if subject == "水道光熱費" or subject == "通信費":
+                if apply == "携帯料金":
+                    pass
+                else:
+                    amount = math.floor(int(amount_text) * 0.3)
         except ValueError:
             messagebox.showwarning("入力エラー", "金額には数値を入力してください！")
             return
@@ -514,9 +521,9 @@ entry_date.bind("<FocusOut>", format_date)
 # 適用、科目、取引分類、取引手段のラベルを追加
 tk.Label(root, text="適用", font=default_font).grid(row=len(labels) + 3, column=0, padx=10, pady=5, sticky="w")
 # 最初の6つの選択肢を配置
-create_radio_buttons(options_apply[:6], selected_option_apply, row_start=len(labels) + 3, column_start=1)
-create_radio_buttons(options_apply[6:12], selected_option_apply, row_start=len(labels) + 4, column_start=1)
-create_radio_buttons(options_apply[12:], selected_option_apply, row_start=len(labels) + 5, column_start=1)
+create_radio_buttons(options_apply[:7], selected_option_apply, row_start=len(labels) + 3, column_start=1)
+create_radio_buttons(options_apply[7:14], selected_option_apply, row_start=len(labels) + 4, column_start=1)
+create_radio_buttons(options_apply[14:], selected_option_apply, row_start=len(labels) + 5, column_start=1)
 # 自由入力用のエントリー（初期は無効）
 apply_entry = tk.Entry(root, font=default_font, state="disabled", width=30)
 apply_entry.grid(row=len(labels) + 5, column=1, padx=650, pady=2, sticky="w")
