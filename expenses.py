@@ -272,7 +272,7 @@ def refresh_table():
         tree.delete(*tree.get_children())  # Treeviewの既存データをすべて削除
 
         # データをTreeviewに挿入
-        for row in original_data:
+        for row in reversed(original_data):
             tree.insert("", "end", values=row)
             
         # ツリービューのフォント設定
