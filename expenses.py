@@ -191,7 +191,8 @@ def save_data():
         entry_amount.delete(0, tk.END)
         reset_fields()
         refresh_table()
-
+        # 選択状態をクリア
+        last_selected_item = None
         # ラベルを「計算中」に設定
         taxable_income_label.config(text="課税所得: 計算中...")
 
