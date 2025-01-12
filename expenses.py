@@ -486,25 +486,25 @@ entry_date.insert(0, "2024")
 entry_date.bind("<FocusOut>", format_date)
 
 # 適用、科目、取引分類、取引手段のラベルを追加
-tk.Label(root, text="適用", font=default_font).grid(row=len(labels), column=0, padx=10, pady=5, sticky="w")
+tk.Label(root, text="適用", font=default_font).grid(row=len(labels) + 3, column=0, padx=10, pady=5, sticky="w")
 # 最初の6つの選択肢を配置
-create_radio_buttons(options_apply[:6], selected_option_apply, row_start=len(labels), column_start=1)
-create_radio_buttons(options_apply[6:12], selected_option_apply, row_start=len(labels) + 1, column_start=1)
-create_radio_buttons(options_apply[12:], selected_option_apply, row_start=len(labels) + 2, column_start=1)
+create_radio_buttons(options_apply[:6], selected_option_apply, row_start=len(labels) + 3, column_start=1)
+create_radio_buttons(options_apply[6:12], selected_option_apply, row_start=len(labels) + 4, column_start=1)
+create_radio_buttons(options_apply[12:], selected_option_apply, row_start=len(labels) + 5, column_start=1)
 # 自由入力用のエントリー（初期は無効）
 apply_entry = tk.Entry(root, font=default_font, state="disabled", width=30)
-apply_entry.grid(row=len(labels) + 2, column=1, padx=650, pady=2, sticky="w")
+apply_entry.grid(row=len(labels) + 5, column=1, padx=650, pady=2, sticky="w")
 # ラジオボタンの選択変更時に動作を連動
 selected_option_apply.trace_add(
     "write", 
     lambda *args: on_apply_change(*args, selected_option=selected_option_apply, entry=apply_entry)
 )
-tk.Label(root, text="科目", font=default_font).grid(row=len(labels) + 3, column=0, padx=10, pady=5, sticky="w")
-create_radio_buttons(options_subject[:6], selected_option_subject, row_start=len(labels) + 3, column_start=1)
-create_radio_buttons(options_subject[6:12], selected_option_subject, row_start=len(labels) + 4, column_start=1)
-create_radio_buttons(options_subject[12:], selected_option_subject, row_start=len(labels) + 5, column_start=1)
+tk.Label(root, text="科目", font=default_font).grid(row=len(labels), column=0, padx=10, pady=5, sticky="w")
+create_radio_buttons(options_subject[:6], selected_option_subject, row_start=len(labels), column_start=1)
+create_radio_buttons(options_subject[6:12], selected_option_subject, row_start=len(labels) + 1, column_start=1)
+create_radio_buttons(options_subject[12:], selected_option_subject, row_start=len(labels) + 2, column_start=1)
 subject_entry = tk.Entry(root, font=default_font, state="disabled", width=30)
-subject_entry.grid(row=len(labels) + 5, column=1, padx=350, pady=2, sticky="w")
+subject_entry.grid(row=len(labels) + 2, column=1, padx=350, pady=2, sticky="w")
 # ラジオボタンの選択変更時に動作を連動
 selected_option_subject.trace_add(
     "write", 
