@@ -9,7 +9,7 @@ from openpyxl import load_workbook
 from googleapiclient.discovery import build
 from google.oauth2.service_account import Credentials
 from datetime import datetime
-from utils import on_apply_change
+from utils import on_apply_change, show_auto_closing_popup
 from cash import cash
 from journal import journal
 from others import others
@@ -53,6 +53,14 @@ selected_option_apply = tk.StringVar(value=options_apply[0])  # 初期値を設�
 selected_option_subject = tk.StringVar(value=options_subject[0])  # 初期値を設定
 selected_option_means = tk.StringVar(value=options_means[0])  # 初期値を設定
 selected_option_kind = tk.StringVar(value=options_kind[0])  # 初期値を設定
+
+# グローバル変数として前回の選択状態を保持
+previous_selection = {
+    "apply": options_apply[0],  # 初期値
+    "subject": options_subject[0],
+    "means": options_means[0],
+    "kind": options_kind[0]
+}
 
 def create_radio_buttons(options, variable, row_start, column_start):
     for i, option in enumerate(options):
@@ -112,6 +120,11 @@ def sort_by_column(column_name):
     except Exception as e:
         print(f"ソート中にエラーが発生しました: {e}")
 
+def bind_enter_to_save():
+    """
+    Enterキーをデータ追加/修正ボタンにバインドする
+    """
+    root.bind("<Return>", lambda event: save_data())
 
 # 日付フォーマット補完関数
 def format_date(event):
@@ -131,7 +144,8 @@ def format_date(event):
 # データを保存する関数
 def save_data():
     global last_selected_item
-    format_date(None)
+    global previous_selection  # 前回の選択状態を保持する変数
+    format_date(None)  # 日付フォーマットを適用
     try:
         # 入力フィールドからデータを取得
         date = entry_date.get()
@@ -139,17 +153,16 @@ def save_data():
         apply = apply_entry.get() if selected_option_apply.get() == "その他" else selected_option_apply.get()
         subject = subject_entry.get() if selected_option_subject.get() == "その他" else selected_option_subject.get()
         means = selected_option_means.get()
-    
-        # 金額を取得し、整形して数値に変換
-        amount_text = entry_amount.get()
-        amount_text = amount_text.replace(",", "")  # 「,」を削除
+
+        # 金額を取得して数値に変換
+        amount_text = entry_amount.get().replace(",", "")  # 「,」を削除
         try:
             amount = int(amount_text)
         except ValueError:
             messagebox.showwarning("入力エラー", "金額には数値を入力してください！")
             return
 
-        # 保存データを準備
+        # 保存するデータを準備
         values = [[date, kind, subject, apply, means, amount]]
         body = {'values': values}
 
@@ -168,7 +181,7 @@ def save_data():
                     body=body
                 ).execute()
 
-                messagebox.showinfo("成功", "データを修正しました！")
+                show_auto_closing_popup(root, "成功", "データを追加しました！")            
             except Exception as e:
                 messagebox.showerror("エラー", f"Googleスプレッドシートへの修正中にエラーが発生しました: {e}")
                 return
@@ -181,22 +194,32 @@ def save_data():
                     valueInputOption="USER_ENTERED",
                     body=body
                 ).execute()
-                messagebox.showinfo("成功", "データを追加しました！")
+                show_auto_closing_popup(root, "成功", "データを追加しました！")
             except Exception as e:
                 messagebox.showerror("エラー", f"Googleスプレッドシートへの保存中にエラーが発生しました: {e}")
                 return
 
+        # 保存が成功した場合、現在の選択状態を保持
+        previous_selection = {
+            "apply": selected_option_apply.get(),
+            "subject": selected_option_subject.get(),
+            "means": selected_option_means.get(),
+            "kind": selected_option_kind.get()
+        }
+
         # フィールドをリセット
-        entry_date.delete(0, tk.END)
-        entry_amount.delete(0, tk.END)
         reset_fields()
+
+        # テーブルを更新
         refresh_table()
+
         # 選択状態をクリア
         last_selected_item = None
+
         # ラベルを「計算中」に設定
         taxable_income_label.config(text="課税所得: 計算中...")
 
-        # バックグラウンドでPLシート更新と課税所得更新を順番に実行
+        # バックグラウンドでPLシート更新と課税所得ラベル更新を実行
         def run_background_tasks():
             try:
                 update_pl_sheet(service, SPREADSHEET_ID)  # PLシート更新
@@ -208,6 +231,7 @@ def save_data():
 
     except Exception as e:
         messagebox.showerror("エラー", f"エラーが発生しました: {e}")
+
 
 # データを表示する関数
 def refresh_table():
@@ -264,13 +288,15 @@ def refresh_table():
 
 def reset_fields():
     entry_date.delete(0, tk.END)
-    entry_date.insert(0, "2024")
+    entry_date.insert(0, "2024")  # 必要に応じて変更
     entry_amount.delete(0, tk.END)
-    selected_option_kind.set(options_kind[0])
-    selected_option_subject.set(options_subject[0])
-    selected_option_apply.set(options_apply[0])
-    selected_option_means.set(options_means[0])
+    # グローバル変数から選択状態を設定
+    selected_option_apply.set(previous_selection["apply"])
+    selected_option_subject.set(previous_selection["subject"])
+    selected_option_means.set(previous_selection["means"])
+    selected_option_kind.set(previous_selection["kind"])
     entry_date.focus()
+
 
 def load_selected_record(event):
     """
@@ -586,5 +612,7 @@ tree.bind("<<TreeviewSelect>>", load_selected_record)
 # 初期データの表示
 refresh_table()
 update_taxable_income_label_from_pl(service, SPREADSHEET_ID)
+# Enterキーのバインド
+bind_enter_to_save()
 # メインループの開始
 root.mainloop()

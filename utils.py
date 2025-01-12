@@ -32,3 +32,28 @@ def on_apply_change(*args, selected_option, entry):
         entry.delete(0, tk.END)  # 内容をクリア
         entry.config(state="disabled")  # 入力を無効化する
 
+def show_auto_closing_popup(root, title, message, duration=1500):
+    """
+    自動で消えるポップアップを表示する
+    Args:
+        title (str): ポップアップのタイトル
+        message (str): ポップアップのメッセージ
+        duration (int): ポップアップが消えるまでの時間（ミリ秒）
+    """
+    popup = tk.Toplevel()
+    popup.title(title)
+    popup.geometry("300x100")  # サイズを設定（必要に応じて調整）
+    popup.resizable(False, False)
+
+    # メッセージラベル
+    tk.Label(popup, text=message, font=("Arial", 12), wraplength=280).pack(pady=20)
+
+    # ポップアップを中央に配置
+    x = root.winfo_x() + (root.winfo_width() // 2) - (300 // 2)
+    y = root.winfo_y() + (root.winfo_height() // 2) - (100 // 2)
+    popup.geometry(f"+{x}+{y}")
+
+    # 自動で消える設定
+    popup.after(duration, popup.destroy)
+
+
