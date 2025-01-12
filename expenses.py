@@ -562,21 +562,21 @@ save_button.grid(row=len(labels) + 9, column=0, columnspan=2, pady=(10, 5), padx
 delete_button = tk.Button(root, text="データを削除", command=delete_data, font=default_font, width=15)
 delete_button.grid(row=len(labels) + 9, column=0, columnspan=2, pady=(10, 5), padx=(200, 0), sticky="w")
 
-# PLシート更新ボタン
-update_PL_button = tk.Button(root, text="PLシート更新", command=lambda: update_pl_sheet(service, SPREADSHEET_ID), font=default_font, width=15)
-update_PL_button.grid(row=len(labels) + 9, column=0, columnspan=2, pady=(10, 5), padx=(360, 0), sticky="w")
+# # PLシート更新ボタン
+# update_PL_button = tk.Button(root, text="PLシート更新", command=lambda: update_pl_sheet(service, SPREADSHEET_ID), font=default_font, width=15)
+# update_PL_button.grid(row=len(labels) + 9, column=0, columnspan=2, pady=(10, 5), padx=(360, 0), sticky="w")
 
 # PLシート更新ボタン
 update_cash_button = tk.Button(root, text="現金シート更新", command=lambda: cash(service, SPREADSHEET_ID), font=default_font, width=15)
-update_cash_button.grid(row=len(labels) + 9, column=0, columnspan=2, pady=(10, 5), padx=(520, 0), sticky="w")
+update_cash_button.grid(row=len(labels) + 9, column=0, columnspan=2, pady=(10, 5), padx=(360, 0), sticky="w")
 
 # 仕訳帳シート更新ボタン
 update_journal_button = tk.Button(root, text="仕訳帳シート更新", command=lambda: journal(service, SPREADSHEET_ID), font=default_font, width=15)
-update_journal_button.grid(row=len(labels) + 9, column=0, columnspan=2, pady=(10, 5), padx=(680, 0), sticky="w")
+update_journal_button.grid(row=len(labels) + 9, column=0, columnspan=2, pady=(10, 5), padx=(520, 0), sticky="w")
 
 # それ以外のシート更新ボタン
 update_proprietor_button = tk.Button(root, text="それ以外全て更新", command=update_proprietor_and_sales, font=default_font, width=15)
-update_proprietor_button.grid(row=len(labels) + 9, column=0, columnspan=2, pady=(10, 5), padx=(840, 0), sticky="w")
+update_proprietor_button.grid(row=len(labels) + 9, column=0, columnspan=2, pady=(10, 5), padx=(680, 0), sticky="w")
 
 # データ表示用のTreeview
 # データ表示用のFrameを作成
