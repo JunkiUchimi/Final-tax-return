@@ -411,7 +411,7 @@ def update_proprietor_and_sales():
         others(service, SPREADSHEET_ID, subjectif="接待交際費", range_name="旅費・接待・研修!J4:P")
         others(service, SPREADSHEET_ID, subjectif="研修費", range_name="旅費・接待・研修!R4:X")
         others(service, SPREADSHEET_ID, subjectif="会議費", range_name="会議費・修繕費・新聞・利子!B4:H")
-        others(service, SPREADSHEET_ID, subjectif="新聞図書費", range_name="会議費・修繕費・新聞・利子!B4:H")
+        others(service, SPREADSHEET_ID, subjectif="新聞図書費", range_name="会議費・修繕費・新聞・利子!J4:P")
         others(service, SPREADSHEET_ID, subjectif="修繕費", range_name="会議費・修繕費・新聞・利子!R4:X")
         others(service, SPREADSHEET_ID, subjectif="利子割引料", range_name="会議費・修繕費・新聞・利子!Z4:AF")
         others(service, SPREADSHEET_ID, subjectif="租税公課", range_name="租税・雑費・水道・更新!B4:H")

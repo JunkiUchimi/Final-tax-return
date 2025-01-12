@@ -47,6 +47,11 @@ def update_cash_sheet(service, spreadsheet_id, records, range_name="現金!B5:H"
         records: 経費データのリスト
         range_name: 書き込む範囲 (既定値: 現金!B5:H)
     """
+    # 指定範囲を消去
+    service.spreadsheets().values().clear(
+        spreadsheetId=spreadsheet_id,
+        range=range_name
+    ).execute()
     # 前期繰越の残高を取得
     prev_balance_range = "現金!H4"
     result = service.spreadsheets().values().get(

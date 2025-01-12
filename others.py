@@ -49,6 +49,11 @@ def others(service, SPREADSHEET_ID, subjectif, range_name):
         print(f"エラーが発生しました: {e}")
 
 def update_others_sheet(service, spreadsheet_id, records, range_name):
+    # 指定範囲を消去
+    service.spreadsheets().values().clear(
+        spreadsheetId=spreadsheet_id,
+        range=range_name
+    ).execute()
     others_data = []
     balance = 0
     for record in records:

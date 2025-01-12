@@ -12,6 +12,7 @@ def fetch_sorted_expenses(service, spreadsheet_id, range_name="経費!A2:F"):
     Returns:
         list: 月日でソートされた経費データ
     """
+
     result = service.spreadsheets().values().get(
         spreadsheetId=spreadsheet_id,
         range=range_name
@@ -43,6 +44,11 @@ def journal(service, SPREADSHEET_ID):
 
 def update_journal_sheet(service, spreadsheet_id, records, range_name="仕訳帳!B4:H"):
     journal_data = []
+    # 指定範囲を消去
+    service.spreadsheets().values().clear(
+        spreadsheetId=spreadsheet_id,
+        range=range_name
+    ).execute()
     for record in records:
             month, day, subject, apply, means, kind, amount = record
             # 新しい行を作成
