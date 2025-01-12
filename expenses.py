@@ -178,7 +178,10 @@ def save_data():
             try:
                 # Treeviewからインデックスを取得
                 item_index = tree.index(last_selected_item) + 1  # ヘッダーを考慮
-                update_range = f"経費!A{item_index + 1}:F{item_index + 1}"  # 対象行を指定
+                spre_index = len(original_data) - item_index + 1
+                print(item_index)
+                print(spre_index)
+                update_range = f"経費!A{spre_index + 1}:F{spre_index + 1}"  # 対象行を指定
 
                 # Googleスプレッドシートのデータを上書き
                 service.spreadsheets().values().update(
@@ -318,6 +321,8 @@ def load_selected_record(event):
     # 現在選択されているTreeviewのアイテム
     selected_item = tree.selection()
 
+    print(f"Selected items: {selected_item}")  # 選択アイテムを表示
+
     # 同じアイテムを選択した場合は選択を解除し、フィールドをリセット
     if selected_item and selected_item[0] == last_selected_item:
         tree.selection_remove(selected_item[0])
@@ -331,7 +336,8 @@ def load_selected_record(event):
     if selected_item:
         last_selected_item = selected_item[0]  # 現在の選択を記録
         item_index = tree.index(selected_item[0])
-        item_index += 1
+        spreadsheet_index = len(original_data) - item_index  # スプレッドシートの正しいインデックスを計算
+
 
         try:
             # Googleスプレッドシートからデータを取得
@@ -341,8 +347,8 @@ def load_selected_record(event):
             ).execute()
             values = result.get('values', [])
             # 選択された行のデータを取得
-            if 0 <= item_index:
-                record = values[item_index]
+            if 0 <= spreadsheet_index:
+                record = values[spreadsheet_index]
 
                 # フィールドにデータを設定
                 entry_date.delete(0, tk.END)
