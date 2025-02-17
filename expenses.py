@@ -14,6 +14,7 @@ from utils import on_apply_change, show_auto_closing_popup
 from cash import cash
 from journal import journal
 from others import others
+import threading
 
 # Google API設定
 SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
@@ -228,16 +229,21 @@ def save_data():
 
         # ラベルを「計算中」に設定
         taxable_income_label.config(text="課税所得: 計算中...")
-
-        # バックグラウンドでPLシート更新と課税所得ラベル更新を実行
+        lock = threading.Lock()
         def run_background_tasks():
-            try:
-                update_pl_sheet(service, SPREADSHEET_ID)  # PLシート更新
-                update_taxable_income_label_from_pl(service, SPREADSHEET_ID)  # 課税所得ラベル更新
-            except Exception as e:
-                print(f"エラー: {e}")
+            with lock:  # このブロック内の処理は他のスレッドと競合しない
+                try:
+                    update_pl_sheet(service, SPREADSHEET_ID)  # PLシート更新
+                    update_taxable_income_label_from_pl(service, SPREADSHEET_ID)  # 課税所得ラベル更新
+                except Exception as e:
+                    print(f"エラー: {e}")
 
-        threading.Thread(target=run_background_tasks, daemon=True).start()
+        def save_data():
+            if lock.locked():
+                messagebox.showwarning("処理中", "前回の登録が完了するまでお待ちください。")
+                return
+
+            threading.Thread(target=run_background_tasks, daemon=True).start()
 
     except Exception as e:
         messagebox.showerror("エラー", f"エラーが発生しました: {e}")
@@ -372,7 +378,7 @@ def delete_data():
         return
 
     try:
-        # スプレッドシートのデータを取得
+        # Googleスプレッドシートのデータを取得
         result = service.spreadsheets().values().get(
             spreadsheetId=SPREADSHEET_ID,
             range=RANGE_NAME
@@ -383,29 +389,33 @@ def delete_data():
             messagebox.showwarning("削除エラー", "スプレッドシートが空です。")
             return
 
-        # 選択された行を削除（末尾から処理してインデックスのズレを防ぐ）
-        for item in sorted(selected_item, key=tree.index, reverse=True):
-            item_index = tree.index(item) + 1  # ヘッダー行を考慮
-            if 0 <= item_index < len(values):
-                values.pop(item_index)
-            else:
-                messagebox.showerror("エラー", "選択されたデータがスプレッドシートに存在しません。")
-                return
+        # 選択された行のスプレッドシート内の正しいインデックスを取得
+        indexes_to_delete = []
+        for item in selected_item:
+            tree_index = tree.index(item)  # Treeview上でのインデックス
+            spreadsheet_index = len(original_data) - tree_index  # スプレッドシートのインデックス調整
+            if 0 <= spreadsheet_index < len(values):
+                indexes_to_delete.append(spreadsheet_index)
 
-        # 削除後のデータを更新
-        if not values:  # データが空になった場合
+        # インデックスを降順で削除（リストのズレを防ぐ）
+        indexes_to_delete.sort(reverse=True)
+        for index in indexes_to_delete:
+            del values[index]
+
+        # スプレッドシートを更新
+        if not values:  # すべてのデータが削除された場合
             service.spreadsheets().values().clear(
                 spreadsheetId=SPREADSHEET_ID,
                 range=RANGE_NAME
             ).execute()
         else:
-            # スプレッドシート全体を一度クリアして新しいデータを書き込む
+            # スプレッドシートを一度クリアして新しいデータを書き込む
             service.spreadsheets().values().clear(
                 spreadsheetId=SPREADSHEET_ID,
                 range=RANGE_NAME
             ).execute()
 
-            # 削除後のデータを書き込み
+            # 更新後のデータをスプレッドシートに書き込み
             body = {'values': values}
             updated_range = f"経費!A1:F{len(values)}"
             service.spreadsheets().values().update(
@@ -421,6 +431,7 @@ def delete_data():
 
     except Exception as e:
         messagebox.showerror("エラー", f"データの削除中にエラーが発生しました: {e}")
+
 
 def update_taxable_income_label():
     try:
