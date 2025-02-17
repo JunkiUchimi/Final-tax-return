@@ -14,7 +14,6 @@ from utils import on_apply_change, show_auto_closing_popup
 from cash import cash
 from journal import journal
 from others import others
-import threading
 
 # Google API設定
 SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
@@ -229,21 +228,16 @@ def save_data():
 
         # ラベルを「計算中」に設定
         taxable_income_label.config(text="課税所得: 計算中...")
-        lock = threading.Lock()
+
+        # バックグラウンドでPLシート更新と課税所得ラベル更新を実行
         def run_background_tasks():
-            with lock:  # このブロック内の処理は他のスレッドと競合しない
-                try:
-                    update_pl_sheet(service, SPREADSHEET_ID)  # PLシート更新
-                    update_taxable_income_label_from_pl(service, SPREADSHEET_ID)  # 課税所得ラベル更新
-                except Exception as e:
-                    print(f"エラー: {e}")
+            try:
+                update_pl_sheet(service, SPREADSHEET_ID)  # PLシート更新
+                update_taxable_income_label_from_pl(service, SPREADSHEET_ID)  # 課税所得ラベル更新
+            except Exception as e:
+                print(f"エラー: {e}")
 
-        def save_data():
-            if lock.locked():
-                messagebox.showwarning("処理中", "前回の登録が完了するまでお待ちください。")
-                return
-
-            threading.Thread(target=run_background_tasks, daemon=True).start()
+        threading.Thread(target=run_background_tasks, daemon=True).start()
 
     except Exception as e:
         messagebox.showerror("エラー", f"エラーが発生しました: {e}")
