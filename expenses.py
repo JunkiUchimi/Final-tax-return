@@ -229,15 +229,49 @@ def save_data():
         # ラベルを「計算中」に設定
         taxable_income_label.config(text="課税所得: 計算中...")
 
-        # バックグラウンドでPLシート更新と課税所得ラベル更新を実行
-        def run_background_tasks():
-            try:
-                update_pl_sheet(service, SPREADSHEET_ID)  # PLシート更新
-                update_taxable_income_label_from_pl(service, SPREADSHEET_ID)  # 課税所得ラベル更新
-            except Exception as e:
-                print(f"エラー: {e}")
+        # スピナー用の変数（グローバル）
+        loading_label = None
+        loading_spinner = None
 
-        threading.Thread(target=run_background_tasks, daemon=True).start()
+        def show_spinner():
+            """ スピナーを表示する """
+            global loading_label, loading_spinner
+
+            if loading_label is None:
+                loading_label = tk.Label(root, text="処理中...", font=default_font)
+                loading_label.grid(row=len(labels) + 12, column=0, columnspan=2, pady=(5, 10), padx=(20, 0), sticky="w")
+
+            if loading_spinner is None:
+                loading_spinner = ttk.Progressbar(root, mode="indeterminate", length=150)
+                loading_spinner.grid(row=len(labels) + 12, column=1, padx=10, pady=5, sticky="w")
+
+            loading_spinner.start()  # スピナー開始
+            loading_label.config(text="処理中...")
+
+        def hide_spinner():
+            """ スピナーを非表示にする """
+            if loading_spinner is not None:
+                loading_spinner.stop()  # スピナー停止
+                loading_spinner.grid_remove()
+
+            if loading_label is not None:
+                loading_label.config(text="処理完了")
+
+        def run_background_tasks():
+            """ バックグラウンド処理 """
+            show_spinner()  # スピナーを表示
+
+            def task():
+                try:
+                    update_pl_sheet(service, SPREADSHEET_ID)  # PLシート更新
+                    update_taxable_income_label_from_pl(service, SPREADSHEET_ID)  # 課税所得ラベル更新
+                except Exception as e:
+                    print(f"エラー: {e}")
+                finally:
+                    root.after(100, hide_spinner)  # メインスレッドでスピナーを非表示にする
+
+            threading.Thread(target=task, daemon=True).start()
+
 
     except Exception as e:
         messagebox.showerror("エラー", f"エラーが発生しました: {e}")
