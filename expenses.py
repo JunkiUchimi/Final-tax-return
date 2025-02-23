@@ -143,12 +143,30 @@ def format_date(event):
         messagebox.showwarning("入力エラー", "日付は8桁の数字を入力してください！")
         entry_date.delete(0, tk.END)
 
+global processing
+processing = False  # 処理中かどうかを判定するフラグ
 # データを保存する関数
 def save_data():
     global last_selected_item
     global previous_selection  # 前回の選択状態を保持する変数
+    global processing  # グローバル変数として宣言
+
+    if processing:
+        messagebox.showinfo("処理中", "一つ前の処理が続いています。お待ち下さい。")
+        return
+
+    processing = True  # 処理開始時にフラグをTrueにする
     format_date(None)  # 日付フォーマットを適用
     try:
+        # ボタンを無効化
+        save_button.config(state="disabled")
+        delete_button.config(state="disabled")
+        update_cash_button.config(state="disabled")
+        update_journal_button.config(state="disabled")
+        update_proprietor_button.config(state="disabled")
+        # エンターキーのバインドを解除
+        root.unbind("<Return>")
+        root.bind("<Return>", lambda event: messagebox.showinfo("処理中", "一つ前の処理が続いています。お待ち下さい。"))
         # 入力フィールドからデータを取得
         date = entry_date.get()
         kind = selected_option_kind.get()
@@ -229,25 +247,40 @@ def save_data():
 
         # ラベルを「計算中」に設定
         taxable_income_label.config(text="課税所得: 計算中...")
-        lock = threading.Lock()
-        def run_background_tasks():
-            with lock:  # このブロック内の処理は他のスレッドと競合しない
-                try:
-                    update_pl_sheet(service, SPREADSHEET_ID)  # PLシート更新
-                    update_taxable_income_label_from_pl(service, SPREADSHEET_ID)  # 課税所得ラベル更新
-                except Exception as e:
-                    print(f"エラー: {e}")
+                # 処理をバックグラウンドで実行
+        def update_processing():
+            try:
+                update_pl_sheet(service, SPREADSHEET_ID)  # PLシート更新
+                update_taxable_income_label_from_pl(service, SPREADSHEET_ID)  # 課税所得ラベル更新
+            except Exception as e:
+                print(f"エラー: {e}")
+            finally:
+                global processing
+                processing = False  # 処理完了後にフラグを戻す
+                # 処理完了後にボタンを再び有効化
+                save_button.config(state="normal")
+                delete_button.config(state="normal")
+                update_cash_button.config(state="normal")
+                update_journal_button.config(state="normal")
+                update_proprietor_button.config(state="normal")
 
-        def save_data():
-            if lock.locked():
-                messagebox.showwarning("処理中", "前回の登録が完了するまでお待ちください。")
-                return
+                # エンターキーのバインドを元に戻す
+                root.bind("<Return>", lambda event: save_data())
 
-            threading.Thread(target=run_background_tasks, daemon=True).start()
+        threading.Thread(target=update_processing, daemon=True).start()
+        
 
     except Exception as e:
         messagebox.showerror("エラー", f"エラーが発生しました: {e}")
+        processing = False  # 失敗したらフラグを戻す
+        save_button.config(state="normal")
+        delete_button.config(state="normal")
+        update_cash_button.config(state="normal")
+        update_journal_button.config(state="normal")
+        update_proprietor_button.config(state="normal")
 
+        # エンターキーのバインドを再開
+        root.bind("<Return>", lambda event: save_data())
 
 # データを表示する関数
 def refresh_table():
