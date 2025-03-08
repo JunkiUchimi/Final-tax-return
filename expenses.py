@@ -183,7 +183,7 @@ def save_data():
                 if apply == "携帯料金":
                     pass
                 else:
-                    amount = math.floor(int(amount_text) * 0.3)
+                    amount = math.floor(int(amount_text) * 0.35)
         except ValueError:
             messagebox.showwarning("入力エラー", "金額には数値を入力してください！")
             return
