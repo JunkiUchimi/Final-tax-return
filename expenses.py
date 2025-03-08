@@ -179,7 +179,7 @@ def save_data():
 
         try:
             amount = int(amount_text)
-            if subject == "水道光熱費" or subject == "通信費":
+            if subject in ["水道光熱費", "通信費", "利子割引料"]:
                 if apply == "携帯料金":
                     pass
                 else:
