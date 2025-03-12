@@ -18,6 +18,10 @@ def fetch_sorted_expenses(service, spreadsheet_id, subjectif, range_name="経費
     ).execute()
 
     values = result.get('values', [])
+        # データの内容を確認するための出力
+
+    if not values:
+        return []
     if not values:
         return []
     
