@@ -50,6 +50,8 @@ options_kind = [ "経費", "事業主貸", "売上" ]
 # 適用フィールドに「その他」を追加
 options_apply.append("その他")
 options_subject.append("その他")
+options_means.append("その他")
+options_kind.append("その他")
 
 selected_option_apply = tk.StringVar(value=options_apply[0])  # 初期値を設定
 selected_option_subject = tk.StringVar(value=options_subject[0])  # 初期値を設定
@@ -169,10 +171,10 @@ def save_data():
         root.bind("<Return>", lambda event: messagebox.showinfo("処理中", "一つ前の処理が続いています。お待ち下さい。"))
         # 入力フィールドからデータを取得
         date = entry_date.get()
-        kind = selected_option_kind.get()
+        kind = selected_option_kind.get() if selected_option_kind.get() == "その他" else selected_option_kind.get()
         apply = apply_entry.get() if selected_option_apply.get() == "その他" else selected_option_apply.get()
         subject = subject_entry.get() if selected_option_subject.get() == "その他" else selected_option_subject.get()
-        means = selected_option_means.get()
+        means = selected_option_means.get() if selected_option_means.get() == "その他" else selected_option_means.get()
 
         # 金額を取得して数値に変換
         amount_text = entry_amount.get().replace(",", "")  # 「,」を削除
@@ -488,7 +490,8 @@ def update_taxable_income_label():
 def update_proprietor_and_sales():
     # "事業主貸" の処理
     try:
-        others(service, SPREADSHEET_ID, subjectif="事業主貸", range_name="事業主貸・売上!B21:H")
+        others(service, SPREADSHEET_ID, subjectif="事業主貸", range_name="事業主貸・売上!J4:P")
+        others(service, SPREADSHEET_ID, subjectif="売上", range_name="事業主貸・売上!B4:H")
         others(service, SPREADSHEET_ID, subjectif="消耗品費", range_name="消耗品費!B4:H")
         others(service, SPREADSHEET_ID, subjectif="旅費交通費", range_name="旅費・接待・研修!B4:H")
         others(service, SPREADSHEET_ID, subjectif="接待交際費", range_name="旅費・接待・研修!J4:P")
@@ -595,9 +598,22 @@ selected_option_subject.trace_add(
 )
 tk.Label(root, text="取引分類", font=default_font).grid(row=len(labels) + 6, column=0, padx=10, pady=5, sticky="w")
 create_radio_buttons(options_kind, selected_option_kind, row_start=len(labels) + 6, column_start=1)
+kind_entry = tk.Entry(root, font=default_font, state="disabled", width=30)
+kind_entry.grid(row=len(labels) + 6, column=1, padx=450, pady=2, sticky="w")
+# ラジオボタンの選択変更時に動作を連動
+selected_option_kind.trace_add(
+    "write", 
+    lambda *args: on_apply_change(*args, selected_option=selected_option_kind, entry=kind_entry)
+)
 tk.Label(root, text="取引手段", font=default_font).grid(row=len(labels) + 7, column=0, padx=10, pady=5, sticky="w")
 create_radio_buttons(options_means, selected_option_means, row_start=len(labels) + 7, column_start=1)
-
+means_entry = tk.Entry(root, font=default_font, state="disabled", width=30)
+means_entry.grid(row=len(labels) + 7, column=1, padx=350, pady=2, sticky="w")
+# ラジオボタンの選択変更時に動作を連動
+selected_option_means.trace_add(
+    "write", 
+    lambda *args: on_apply_change(*args, selected_option=selected_option_means, entry=means_entry)
+)
 # 保存ボタン
 save_button = tk.Button(root, text="データを追加/修正", command=save_data, font=default_font, width=15)
 save_button.grid(row=len(labels) + 9, column=0, columnspan=2, pady=(10, 5), padx=(40, 0), sticky="w")

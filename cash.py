@@ -32,7 +32,8 @@ def fetch_sorted_expenses(service, spreadsheet_id, range_name="経費!A2:F"):
         debit = amount if kind == "売上" else None
         credit = None if kind == "売上" else amount
         if means == "現金":
-            expenses.append([int(month), int(day), subject, apply, debit, credit])
+            if subject != "減価償却費":
+                expenses.append([int(month), int(day), subject, apply, debit, credit])
     
     # 月日でソート
     return sorted(expenses, key=lambda x: (x[0], x[1]))
