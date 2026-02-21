@@ -2,6 +2,7 @@ import pandas as pd
 import os
 from tkinter import messagebox
 import tkinter as tk
+from tkinter import ttk
 
 def create_radio_buttons(root, options, variable, row_start, column_start, default_font):
     """
@@ -57,3 +58,26 @@ def show_auto_closing_popup(root, title, message, duration=1500):
     popup.after(duration, popup.destroy)
 
 
+def show_loading(root, message="処理中..."):
+    """
+    ローディングポップアップを表示する
+    Returns: popupウィンドウ（呼び出し元でpopup.destroy()して閉じる）
+    """
+    popup = tk.Toplevel(root)
+    popup.title("処理中")
+    popup.geometry("250x80")
+    popup.resizable(False, False)
+    popup.grab_set()  # 他の操作をブロック
+
+    # 中央に配置
+    x = root.winfo_x() + (root.winfo_width() // 2) - 125
+    y = root.winfo_y() + (root.winfo_height() // 2) - 40
+    popup.geometry(f"+{x}+{y}")
+
+    tk.Label(popup, text=message, font=("Arial", 11)).pack(pady=5)
+    progress = ttk.Progressbar(popup, mode="indeterminate", length=200)
+    progress.pack(pady=5)
+    progress.start(10)
+
+    popup.update()
+    return popup
