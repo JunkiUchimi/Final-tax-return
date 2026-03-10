@@ -194,7 +194,7 @@ def save_data():
         kind    = selected_option_kind.get()
         subject = subject_entry.get() if selected_option_subject.get() == "その他" else selected_option_subject.get()
         apply   = apply_entry.get()   if selected_option_apply.get()   == "その他" else selected_option_apply.get()
-        means   = selected_option_means.get()
+        means   = means_entry.get()   if selected_option_means.get()   == "その他" else selected_option_means.get()
 
         # 按分計算（携帯料金以外の水道光熱費・通信費・利子割引料は35%）
         if subject in ["水道光熱費", "通信費", "利子割引料"] and apply != "携帯料金":

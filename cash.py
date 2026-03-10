@@ -53,28 +53,27 @@ def update_cash_sheet(service, spreadsheet_id, records, range_name="現金!B5:H"
         spreadsheetId=spreadsheet_id,
         range=range_name
     ).execute()
-    # 前期繰越の残高を取得
+
     prev_balance_range = "現金!H4"
     result = service.spreadsheets().values().get(
         spreadsheetId=spreadsheet_id,
         range=prev_balance_range
     ).execute()
-    prev_balance = float(result.get('values', [[0]])[0][0].replace(",", ""))
 
-    # 現金データを準備
+    prev_balance_raw = result.get('values', [["0"]])[0][0]
+    prev_balance = float(str(prev_balance_raw).replace(",", ""))
+
     cash_data = []
     for record in records:
         month, day, account, apply, debit, credit = record
-        # 残高を計算
+
         if debit:
             prev_balance += debit
         elif credit:
             prev_balance -= credit
 
-        # 新しい行を作成
         cash_data.append([month, day, account, apply, debit, credit, prev_balance])
 
-    # シートに書き込む
     body = {'values': cash_data}
     service.spreadsheets().values().update(
         spreadsheetId=spreadsheet_id,
@@ -90,7 +89,6 @@ def cash(service, SPREADSHEET_ID):
 
         # 現金シートを更新
         update_cash_sheet(service, SPREADSHEET_ID, sorted_expenses)
-        messagebox.showinfo("成功", "現金データを登録しました！")
         print("現金シートの更新が完了しました。")
     except Exception as e:
         print(f"エラーが発生しました: {e}")

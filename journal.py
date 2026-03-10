@@ -37,7 +37,6 @@ def journal(service, SPREADSHEET_ID):
     try:
         # 経費データを取得
         sorted_expenses = fetch_sorted_expenses(service, SPREADSHEET_ID)
-        messagebox.showinfo("成功", "現金データを登録しました！")
         update_journal_sheet(service, SPREADSHEET_ID, sorted_expenses)
     except Exception as e:
         print(f"エラーが発生しました: {e}")
